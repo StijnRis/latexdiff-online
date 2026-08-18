@@ -41,7 +41,11 @@ function installDomShim() {
 }
 
 installDomShim();
+console.debug = function () {};
 importScripts(webperlUrl);
+if (Array.isArray(Perl.stateChangeListeners)) {
+  Perl.stateChangeListeners.length = 0;
+}
 
 let perlReady = false;
 let latexdiffMounted = false;
@@ -68,7 +72,7 @@ function perlStringLiteral(value) {
   return JSON.stringify(String(value));
 }
 
-/** latexdiff warns about kpsewhich/listings when no TeX live is available. */
+/** Browser Perl has no TeX Live; latexdiff also redefines subs on each run. */
 function stripBenignStderr(stderr) {
   return String(stderr || '')
     .split(/\r?\n/)
@@ -78,10 +82,28 @@ function stripBenignStderr(stderr) {
       if (/listings package not detected/i.test(text)) return false;
       if (/Disabling mark-up in verbatim/i.test(text)) return false;
       if (/Use of uninitialized value/i.test(text)) return false;
+      if (/^Subroutine \S+ redefined at/i.test(text)) return false;
+      if (/^Perl:/i.test(text)) return false;
       return true;
     })
     .join('\n')
     .trim();
+}
+
+function patchLatexdiffSource(source) {
+  return source
+    .replace(
+      /defined\(\s*\$packages\{"listings"\}\s*\)\s+or\s+`kpsewhich listings\.sty`\s+ne\s+""/,
+      'defined($packages{"listings"})',
+    )
+    .replace(
+      /use warnings;/,
+      "use warnings;\nno warnings qw(redefine prototype once);",
+    )
+    .replace(
+      /^print \$diffall;/m,
+      'open(my $__difffh, ">", "/diff.out") or die $!; binmode($__difffh, ":utf8"); print $__difffh $diffall; close $__difffh;',
+    );
 }
 
 async function mountLatexdiff() {
@@ -89,10 +111,7 @@ async function mountLatexdiff() {
   if (!res.ok) {
     throw new Error(`Failed to fetch latexdiff-so (${res.status})`);
   }
-  const latexdiffCode = (await res.text()).replace(
-    /defined\(\s*\$packages\{"listings"\}\s*\)\s+or\s+`kpsewhich listings\.sty`\s+ne\s+""/,
-    'defined($packages{"listings"})',
-  );
+  const latexdiffCode = patchLatexdiffSource(await res.text());
   if (typeof FS !== 'undefined' && FS.writeFile) {
     FS.writeFile('/latexdiff.pl', latexdiffCode);
   } else {
@@ -110,7 +129,12 @@ function initPerl() {
   Perl.trace = false;
   Perl.init(async () => {
     try {
-      Perl.start(['-e', '1']);
+      if (typeof FS !== 'undefined' && FS.writeFile) {
+        FS.writeFile('/boot.pl', "1;\n");
+        Perl.start(['/boot.pl']);
+      } else {
+        Perl.start(['-e', '1']);
+      }
       await mountLatexdiff();
       perlReady = true;
       post('ready');
@@ -128,9 +152,20 @@ function runLatexdiff({ oldText, newText, argv }) {
     throw new Error('Missing latexdiff arguments.');
   }
 
+  console.log('[wasm] latexdiff input', {
+    argv,
+    oldTex: String(oldText ?? ''),
+    newTex: String(newText ?? ''),
+  });
+
   const capture = captureOutput();
 
   if (typeof FS !== 'undefined' && FS.writeFile) {
+    try {
+      FS.unlink('/diff.out');
+    } catch {
+      /* no previous output */
+    }
     FS.writeFile('/old.tex', String(oldText ?? ''));
     FS.writeFile('/new.tex', String(newText ?? ''));
   } else {
@@ -150,13 +185,22 @@ function runLatexdiff({ oldText, newText, argv }) {
   // `do FILE` does not bind DATA, so eval the script with DATA opened on the file.
   Perl.eval(
     [
+      '$SIG{__WARN__} = sub {',
+      '  my $msg = $_[0];',
+      '  return if $msg =~ /redefined at/;',
+      '  return if $msg =~ /Use of uninitialized value/;',
+      '  return if $msg =~ /listings package not detected/;',
+      '  return if $msg =~ /Disabling mark-up in verbatim/;',
+      '  print STDERR $msg;',
+      '};',
+      'chdir "/";',
       "$0 = '/latexdiff.pl';",
       "open(DATA, '<', '/latexdiff.pl') or die \"Cannot open latexdiff-so: $!\";",
       "open(my $srcfh, '<', '/latexdiff.pl') or die $!;",
       'my $code = do { local $/; <$srcfh> };',
       'close $srcfh;',
       '$code =~ s/^__END__\\s*[\\r\\n].*//s;',
-      "no warnings 'redefine';",
+      "no warnings qw(redefine prototype once);",
       '*CORE::GLOBAL::exit = sub { die "LATEXDIFF_EXIT:" . ($_[0] // 0) . "\\n" };',
       '*CORE::GLOBAL::readpipe = sub { "" };',
       `@ARGV = (${argList});`,
@@ -169,22 +213,36 @@ function runLatexdiff({ oldText, newText, argv }) {
 
   const { stdout, stderr: rawStderr } = capture.read();
   const stderr = stripBenignStderr(rawStderr);
-  if (stderr && !stdout) {
+  let output = stdout;
+  if (typeof FS !== 'undefined' && FS.readFile) {
+    try {
+      output = FS.readFile('/diff.out', { encoding: 'utf8' });
+    } catch {
+      /* fall back to captured stdout */
+    }
+  }
+  if (stderr && !String(output || '').trim()) {
     throw new Error(stderr);
+  }
+  if (!String(output || '').trim()) {
+    throw new Error(stderr || 'latexdiff produced no output.');
   }
 
   const noPreamble = argv.includes('--no-preamble');
-  if (
-    !noPreamble &&
-    stdout.includes('%DIF PREAMBLE EXTENSION ADDED BY LATEXDIFF') &&
-    !stdout.includes('\\providecommand{\\DIFadd}')
-  ) {
+  if (!noPreamble && !String(output).includes('\\providecommand{\\DIFadd}')) {
     throw new Error(
       stderr || 'latexdiff did not insert preamble macros, so the result would not compile.',
     );
   }
 
-  return { output: stdout, stderr };
+  console.log('[wasm] latexdiff output', {
+    argv,
+    stdout: String(output ?? ''),
+    stderr,
+    rawStderr,
+  });
+
+  return { output, stderr };
 }
 
 self.onmessage = (event) => {

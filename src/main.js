@@ -56,12 +56,14 @@ worker.addEventListener('message', (event) => {
     return;
   }
   if (data.type === 'result') {
+    console.log('[wasm] result from worker', data);
     els.diffOutput.value = data.output || '';
     setBusy(false, 'Run latexdiff');
     setStatus(data.stderr ? 'Finished with warnings.' : 'Done');
     return;
   }
   if (data.type === 'error') {
+    console.error('[wasm] error from worker', data);
     setBusy(false, 'Run latexdiff');
     setStatus(data.message || 'latexdiff failed.', 'error');
   }
@@ -74,9 +76,7 @@ worker.addEventListener('error', (event) => {
 
 els.runBtn.addEventListener('click', () => {
   if (els.runBtn.disabled) return;
-  setBusy(true, 'Running…');
-  setStatus('Running…');
-  worker.postMessage({
+  const payload = {
     type: 'run',
     oldText: els.oldTex.value,
     newText: els.newTex.value,
@@ -85,7 +85,11 @@ els.runBtn.addEventListener('click', () => {
       mathMarkup: els.mathMarkup.value,
       noPreamble: els.noPreamble.checked,
     }),
-  });
+  };
+  console.log('[wasm] sending to worker', payload);
+  setBusy(true, 'Running…');
+  setStatus('Running…');
+  worker.postMessage(payload);
 });
 
 els.copyBtn.addEventListener('click', async () => {
@@ -93,12 +97,17 @@ els.copyBtn.addEventListener('click', async () => {
   if (!text) return;
   try {
     await navigator.clipboard.writeText(text);
-    setStatus('Copied');
   } catch {
     els.diffOutput.select();
     document.execCommand('copy');
-    setStatus('Copied');
   }
+  els.copyBtn.classList.add('is-copied');
+  els.copyBtn.textContent = 'Copied';
+  window.clearTimeout(els.copyBtn._reset);
+  els.copyBtn._reset = window.setTimeout(() => {
+    els.copyBtn.classList.remove('is-copied');
+    els.copyBtn.textContent = 'Copy';
+  }, 1600);
 });
 
 els.downloadBtn.addEventListener('click', () => {

@@ -49,10 +49,11 @@ describe('latexdiff argv builder', () => {
   it('emits default type, math markup, and input paths', () => {
     expect(buildLatexdiffArgv()).toEqual([
       '--encoding=utf8',
+      '--ignore-warnings',
       '--type=UNDERLINE',
       '--math-markup=fine',
-      '/old.tex',
-      '/new.tex',
+      'old.tex',
+      'new.tex',
     ]);
   });
 
@@ -70,11 +71,12 @@ describe('latexdiff argv builder', () => {
       }),
     ).toEqual([
       '--encoding=utf8',
+      '--ignore-warnings',
       '--type=CHANGEBAR',
       '--math-markup=coarse',
       '--no-preamble',
-      '/old.tex',
-      '/new.tex',
+      'old.tex',
+      'new.tex',
     ]);
   });
 

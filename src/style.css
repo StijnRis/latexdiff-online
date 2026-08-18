@@ -64,6 +64,7 @@ footer {
 
 .hero {
   padding: 2.75rem 0 1.25rem;
+  text-align: center;
 }
 
 .eyebrow {
@@ -89,7 +90,7 @@ h1 {
 }
 
 .lede {
-  margin: 0;
+  margin: 0 auto;
   max-width: 46rem;
   color: var(--muted);
   font-size: 1.05rem;
@@ -233,8 +234,9 @@ button:disabled {
   margin-bottom: 0.7rem;
 }
 
-.output-actions button {
-  background: var(--ink);
+.output-actions button.is-copied,
+.output-actions button.is-copied:hover:not(:disabled) {
+  background: #2f6b4f;
 }
 
 #status {
@@ -246,25 +248,46 @@ button:disabled {
   color: var(--accent);
 }
 
-footer {
-  padding: 0 0 2.5rem;
+.about {
+  width: min(46rem, calc(100% - 2rem));
+  margin: 0 auto 2.75rem;
   color: var(--muted);
-  font-size: 0.92rem;
+  text-align: center;
+}
+
+.about h2,
+.about h3 {
+  color: var(--ink);
+}
+
+.about h2 {
+  margin: 0 0 0.75rem;
+  font-size: 1.6rem;
+}
+
+.about h3 {
+  margin: 1.5rem 0 0.4rem;
+  font-size: 1.15rem;
+}
+
+.about p,
+.about ul {
+  margin-inline: auto;
+}
+
+.about ul {
+  display: inline-block;
+  text-align: left;
+  padding-left: 1.15rem;
+}
+
+.about li {
+  margin: 0.35rem 0;
 }
 
 .made-with {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.35rem;
   margin: 0;
-}
-
-.heart {
-  width: 1em;
-  height: 1em;
-  color: var(--accent);
-  transform: translateY(0.05em);
+  text-align: center;
 }
 
 .sr-only {

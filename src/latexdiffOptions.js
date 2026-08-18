@@ -12,8 +12,8 @@ export const MATH_MARKUP_LEVELS = [
   { value: 'off', label: 'Off' },
 ];
 
-const DEFAULT_OLD = '/old.tex';
-const DEFAULT_NEW = '/new.tex';
+const DEFAULT_OLD = 'old.tex';
+const DEFAULT_NEW = 'new.tex';
 
 /**
  * Build the @ARGV list passed to latexdiff-so.
@@ -29,7 +29,7 @@ export function buildLatexdiffArgv(options = {}) {
     newFile = DEFAULT_NEW,
   } = options;
 
-  const argv = ['--encoding=utf8'];
+  const argv = ['--encoding=utf8', '--ignore-warnings'];
 
   if (type) {
     argv.push(`--type=${type}`);

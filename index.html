@@ -18,27 +18,81 @@
       property="og:description"
       content="Run latexdiff entirely in the browser with WebAssembly. Private, install-free LaTeX revision markup."
     />
-    <meta property="og:image" content="%BASE_URL%apple-touch-icon.png" />
-    <meta name="twitter:image" content="%BASE_URL%apple-touch-icon.png" />
+    <meta property="og:image" content="./apple-touch-icon.png" />
+    <meta name="twitter:image" content="./apple-touch-icon.png" />
     <meta name="twitter:title" content="latexdiff Online — Compare LaTeX Files in Your Browser" />
     <meta
       name="twitter:description"
       content="Compare two LaTeX files in your browser. Powered by latexdiff-so and WebPerl."
     />
-    <link rel="icon" href="%BASE_URL%favicon.svg" type="image/svg+xml" />
-    <link rel="icon" href="%BASE_URL%favicon.png" type="image/png" sizes="512x512" />
-    <link rel="apple-touch-icon" href="%BASE_URL%apple-touch-icon.png" />
-    <!-- Cross-Origin Isolation shim for GitHub Pages (SharedArrayBuffer) -->
-    <script src="%BASE_URL%coi-serviceworker.js"></script>
+    <link rel="icon" href="./favicon.svg" type="image/svg+xml" />
+    <link rel="icon" href="./favicon.png" type="image/png" sizes="512x512" />
+    <link rel="apple-touch-icon" href="./apple-touch-icon.png" />
+    <script>
+      window.coi = {
+        shouldRegister: () => !window.crossOriginIsolated,
+        quiet: true,
+      };
+    </script>
+    <!-- Cross-Origin Isolation shim for GitHub Pages -->
+    <script src="./coi-serviceworker.js"></script>
     <script type="application/ld+json">
       {
         "@context": "https://schema.org",
-        "@type": "WebApplication",
-        "name": "latexdiff Online",
-        "applicationCategory": "DeveloperApplication",
-        "operatingSystem": "Any",
-        "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
-        "description": "Compare two LaTeX documents in the browser using latexdiff compiled to WebAssembly. No upload to a server; Perl runs locally via WebPerl."
+        "@graph": [
+          {
+            "@type": "WebApplication",
+            "name": "latexdiff Online",
+            "applicationCategory": "DeveloperApplication",
+            "operatingSystem": "Any",
+            "browserRequirements": "Requires a modern browser with WebAssembly",
+            "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+            "description": "Free in-browser latexdiff. Compare two LaTeX files, mark additions and deletions with \\DIFadd and \\DIFdel, and download a compilable diff. Runs locally via WebPerl; files are not uploaded.",
+            "featureList": [
+              "Compare two LaTeX documents in the browser",
+              "Underline, color (CTAD), and change-bar markup",
+              "Configurable math markup",
+              "Copy or download a compilable latexdiff.tex"
+            ]
+          },
+          {
+            "@type": "FAQPage",
+            "mainEntity": [
+              {
+                "@type": "Question",
+                "name": "What is latexdiff?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "latexdiff is a Perl program that compares two LaTeX files and produces a third file in which additions and deletions are marked with commands such as \\DIFadd and \\DIFdel. After compiling that file, revisions appear underlined, struck through, or highlighted in color."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "Do I need to install Perl or TeX Live to use this site?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "You do not need Perl on your computer. This site runs latexdiff-so inside WebPerl (Perl compiled to WebAssembly) in your browser. You still need a LaTeX compiler such as pdfLaTeX, Overleaf, or TeX Live to typeset the downloaded diff."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "Are my LaTeX files uploaded to a server?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "No. Comparison runs entirely in the browser. The old and new sources never leave your device."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "How do I compile the latexdiff output?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "Save the output as a .tex file and compile it with pdfLaTeX. The default Underline style needs the color and ulem packages. Change-bar markup needs the changebar package."
+                }
+              }
+            ]
+          }
+        ]
       }
     </script>
   </head>
@@ -118,17 +172,62 @@ Hello Beautiful World!
       </section>
     </main>
 
-    <footer>
-      <p class="made-with">
-        Made with
-        <svg class="heart" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-          <path
-            fill="currentColor"
-            d="M12 21s-6.72-4.24-9.43-8.36C.4 9.3 2.05 5.5 6.2 5.5c2.04 0 3.4 1.15 3.8 2.12.4-.97 1.76-2.12 3.8-2.12 4.15 0 5.8 3.8 3.63 7.14C18.72 16.76 12 21 12 21z"
-          />
-        </svg>
-        by Stijn Risseeuw
+    <section class="about" id="about" aria-labelledby="about-heading">
+      <h2 id="about-heading">About latexdiff Online</h2>
+      <p>
+        <strong>latexdiff Online</strong> is a free browser tool for comparing two LaTeX documents.
+        It runs the real <a href="https://www.ctan.org/pkg/latexdiff">latexdiff</a> program
+        (the standalone <code>latexdiff-so</code> script by Frederik Tilmann) inside
+        <a href="https://webperl.zero-g.net/">WebPerl</a>, a WebAssembly build of Perl.
+        You get the same revision markup that people use with Overleaf, Git, and arXiv
+        submissions, without installing Perl.
       </p>
+
+      <h3>What latexdiff does</h3>
+      <p>
+        latexdiff reads an old <code>.tex</code> file and a new one, then writes a third file
+        in which changes are wrapped in commands such as
+        <code>\DIFaddbegin</code> <code>\DIFadd{…}</code> <code>\DIFaddend</code> for additions
+        and <code>\DIFdelbegin</code> <code>\DIFdel{…}</code> <code>\DIFdelend</code> for deletions.
+        When you compile that file, added text is typically underlined in blue and deleted text
+        is struck out in red (Underline style).
+      </p>
+
+      <h3>How to use this page</h3>
+      <ul>
+        <li>Paste the previous version into <strong>Old TeX</strong> and the revised version into <strong>New TeX</strong>.</li>
+        <li>Choose a markup style and, if you have fragile equations, set math markup to Coarse or Off.</li>
+        <li>Tick <strong>Ignore preambles</strong> if you are diffing body fragments without <code>\documentclass</code>.</li>
+        <li>Run latexdiff, then copy or download <code>latexdiff.tex</code> and compile it with pdfLaTeX or Overleaf.</li>
+      </ul>
+
+      <h3>Markup styles and math</h3>
+      <p>
+        <strong>Underline</strong> (default) uses wavy underlines and strikeout via the
+        <code>ulem</code> and <code>color</code> packages.
+        <strong>Color (CTAD)</strong> maps to latexdiff’s CTRADITIONAL style (colored additions and footnote-style deletions).
+        <strong>Change bar</strong> puts a bar in the margin next to changed lines (needs <code>changebar</code>).
+        Fine math markup can break complex <code>align</code> environments; Coarse or Off is safer for heavy equations.
+      </p>
+
+      <h3>Privacy</h3>
+      <p>
+        Comparison happens on your computer. Sources are not uploaded to a server.
+        After the WebPerl engine has loaded, the tool can be used without sending your manuscript anywhere.
+      </p>
+
+      <h3>Related tools</h3>
+      <p>
+        The CTAN package also includes <code>latexdiff-vc</code> for Git, Subversion, and similar
+        version control, and <code>latexrevise</code> to accept or reject markup.
+        This site focuses on the core two-file comparison. For the full manual see
+        the <a href="https://github.com/ftilmann/latexdiff">latexdiff GitHub repository</a>
+        and the <a href="https://www.overleaf.com/learn/latex/Articles/How_to_use_latexdiff_on_Overleaf">Overleaf latexdiff guide</a>.
+      </p>
+    </section>
+
+    <footer>
+      <p class="made-with">Made with ❤️ by Stijn Risseeuw</p>
     </footer>
     <script type="module" src="/src/main.js"></script>
   </body>
