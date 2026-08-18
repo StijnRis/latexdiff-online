@@ -1,0 +1,32 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+node_modules
+dist
+dist-ssr
+*.local
+
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Downloaded runtime (re-fetched by scripts/download-assets.mjs)
+public/webperl.js
+public/emperl.js
+public/emperl.wasm
+public/emperl.data
+public/latexdiff-so
+public/coi-serviceworker.js
+webperl_prebuilt.zip
+webperl_extract/

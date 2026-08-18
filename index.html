@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>latexdiff Online — Compare LaTeX Files in Your Browser</title>
+    <meta
+      name="description"
+      content="Free in-browser latexdiff. Compare two LaTeX documents, highlight additions and deletions, and download a compilable diff — no Perl install, files stay on your device."
+    />
+    <meta name="keywords" content="latexdiff, LaTeX diff, compare LaTeX, TeX, Overleaf, WebAssembly, Perl, revision markup, DIFadd, DIFdel" />
+    <meta name="robots" content="index, follow" />
+    <meta name="author" content="latexdiff Online" />
+    <meta name="theme-color" content="#1f2a24" />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="latexdiff Online — Compare LaTeX Files in Your Browser" />
+    <meta
+      property="og:description"
+      content="Run latexdiff entirely in the browser with WebAssembly. Private, install-free LaTeX revision markup."
+    />
+    <meta property="og:image" content="%BASE_URL%apple-touch-icon.png" />
+    <meta name="twitter:image" content="%BASE_URL%apple-touch-icon.png" />
+    <meta name="twitter:title" content="latexdiff Online — Compare LaTeX Files in Your Browser" />
+    <meta
+      name="twitter:description"
+      content="Compare two LaTeX files in your browser. Powered by latexdiff-so and WebPerl."
+    />
+    <link rel="icon" href="%BASE_URL%favicon.svg" type="image/svg+xml" />
+    <link rel="icon" href="%BASE_URL%favicon.png" type="image/png" sizes="512x512" />
+    <link rel="apple-touch-icon" href="%BASE_URL%apple-touch-icon.png" />
+    <!-- Cross-Origin Isolation shim for GitHub Pages (SharedArrayBuffer) -->
+    <script src="%BASE_URL%coi-serviceworker.js"></script>
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "WebApplication",
+        "name": "latexdiff Online",
+        "applicationCategory": "DeveloperApplication",
+        "operatingSystem": "Any",
+        "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+        "description": "Compare two LaTeX documents in the browser using latexdiff compiled to WebAssembly. No upload to a server; Perl runs locally via WebPerl."
+      }
+    </script>
+  </head>
+  <body>
+    <a class="skip-link" href="#workspace">Skip to editor</a>
+    <header class="hero">
+      <p class="eyebrow">Browser-native · Private · WebAssembly</p>
+      <h1>latexdiff Online</h1>
+      <p class="lede">
+        Compare two LaTeX files and get a compilable diff with
+        <code>\DIFadd</code> / <code>\DIFdel</code> markup. This page runs
+        <a href="https://www.ctan.org/pkg/latexdiff">latexdiff</a> itself — the
+        same Perl tool used with Overleaf and arXiv workflows — inside
+        <a href="https://webperl.zero-g.net/">WebPerl</a>. Nothing is uploaded;
+        the diff is computed on your machine.
+      </p>
+    </header>
+
+    <main id="workspace" class="workspace">
+      <section class="panel" aria-labelledby="inputs-heading">
+        <div class="panel-head">
+          <h2 id="inputs-heading">Old and new sources</h2>
+          <p>Paste the old and new LaTeX sources, then run latexdiff.</p>
+        </div>
+        <div class="editors">
+          <label class="editor">
+            <span>Old TeX</span>
+            <textarea id="oldTex" rows="12" spellcheck="false">\documentclass{article}
+\begin{document}
+Hello World!
+\end{document}</textarea>
+          </label>
+          <label class="editor">
+            <span>New TeX</span>
+            <textarea id="newTex" rows="12" spellcheck="false">\documentclass{article}
+\begin{document}
+Hello Beautiful World!
+\end{document}</textarea>
+          </label>
+        </div>
+      </section>
+
+      <section class="panel options" aria-labelledby="options-heading">
+        <div class="panel-head">
+          <h2 id="options-heading">Options</h2>
+        </div>
+        <div class="option-grid">
+          <label>
+            <span>Markup</span>
+            <select id="markupType"></select>
+          </label>
+          <label>
+            <span>Math</span>
+            <select id="mathMarkup"></select>
+          </label>
+          <label class="check">
+            <input type="checkbox" id="noPreamble" />
+            <span>Ignore preambles (for document fragments)</span>
+          </label>
+        </div>
+        <div class="actions">
+          <button id="runBtn" type="button" disabled>Loading…</button>
+          <p id="status" role="status" aria-live="polite"></p>
+        </div>
+      </section>
+
+      <section class="panel" aria-labelledby="output-heading">
+        <div class="panel-head">
+          <h2 id="output-heading">Diff output</h2>
+        </div>
+        <div class="output-actions">
+          <button id="copyBtn" type="button">Copy</button>
+          <button id="downloadBtn" type="button">Download latexdiff.tex</button>
+        </div>
+        <label class="sr-only" for="diffOutput">latexdiff output</label>
+        <textarea id="diffOutput" rows="16" readonly spellcheck="false"></textarea>
+      </section>
+    </main>
+
+    <footer>
+      <p class="made-with">
+        Made with
+        <svg class="heart" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+          <path
+            fill="currentColor"
+            d="M12 21s-6.72-4.24-9.43-8.36C.4 9.3 2.05 5.5 6.2 5.5c2.04 0 3.4 1.15 3.8 2.12.4-.97 1.76-2.12 3.8-2.12 4.15 0 5.8 3.8 3.63 7.14C18.72 16.76 12 21 12 21z"
+          />
+        </svg>
+        by Stijn Risseeuw
+      </p>
+    </footer>
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
