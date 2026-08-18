@@ -1,4 +1,4 @@
-import { createWriteStream, existsSync } from 'node:fs';
+import { createWriteStream, existsSync, openSync, readSync, closeSync } from 'node:fs';
 import { copyFile, mkdir, readdir, rm, writeFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { pipeline } from 'node:stream/promises';
@@ -22,6 +22,7 @@ const WEBPERL_ZIP =
 
 const FETCH_HEADERS = {
   'User-Agent': 'latexdiff-online-asset-download',
+  Accept: 'application/octet-stream, application/zip, */*',
 };
 
 async function download(url, dest) {
@@ -39,6 +40,39 @@ async function fetchText(url) {
     throw new Error(`Failed to download ${url}: ${res.status} ${res.statusText}`);
   }
   return res.text();
+}
+
+function assertZip(path) {
+  const buf = Buffer.alloc(4);
+  const fd = openSync(path, 'r');
+  readSync(fd, buf, 0, 4, 0);
+  closeSync(fd);
+  if (buf[0] !== 0x50 || buf[1] !== 0x4b) {
+    throw new Error(
+      `Downloaded ${path} is not a zip file (missing PK header). GitHub may have returned an HTML error page.`,
+    );
+  }
+}
+
+function tryExec(command, args) {
+  try {
+    execFileSync(command, args, { stdio: 'inherit' });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/** GNU tar cannot extract zip; Windows bsdtar can. Prefer unzip/Python on Linux CI. */
+function extractZip(zip, dest) {
+  const py = 'import sys, zipfile; zipfile.ZipFile(sys.argv[1]).extractall(sys.argv[2])';
+  if (tryExec('unzip', ['-o', zip, '-d', dest])) return;
+  if (tryExec('python3', ['-c', py, zip, dest])) return;
+  if (tryExec('python', ['-c', py, zip, dest])) return;
+  if (tryExec('tar', ['-xf', zip, '-C', dest])) return;
+  throw new Error(
+    'Could not extract the WebPerl zip. Install unzip or Python 3 (zipfile).',
+  );
 }
 
 /** latexdiff-so is not in git; it is latexdiff with Algorithm::Diff inlined. */
@@ -88,9 +122,10 @@ if (!hasLatexdiff) {
 
 if (!hasWebperl) {
   await download(WEBPERL_ZIP, zipPath);
+  assertZip(zipPath);
   await rm(extractDir, { recursive: true, force: true });
   await mkdir(extractDir, { recursive: true });
-  execFileSync('tar', ['-xf', zipPath, '-C', extractDir]);
+  extractZip(zipPath, extractDir);
   for (const name of needed) {
     const found = await findFile(extractDir, name);
     if (!found) {
